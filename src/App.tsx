@@ -1,4 +1,3 @@
-import React from 'react';
 import { MoodProvider } from './context/MoodContext';
 import HomePage from './pages/index';
 import './index.css';
