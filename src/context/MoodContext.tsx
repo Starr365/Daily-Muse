@@ -1,6 +1,6 @@
 import React, { useState, useEffect, type ReactNode } from 'react';
 import type { Entry, MoodContextType } from '../types';
-import { analyzeEmotion, fetchQuote } from '../utils/api';
+import { fetchMotivationalQuote } from '../utils/api';
 import { loadEntries, saveEntries } from '../utils/localStorage';
 import { MoodContext } from './useMood';
 
@@ -39,28 +39,18 @@ export const MoodProvider: React.FC<MoodProviderProps> = ({ children }) => {
     setDarkMode(prev => !prev);
   };
 
-  const analyzeMood = async (text: string): Promise<void> => {
+  const fetchQuoteForEmotion = async (emotion: string): Promise<void> => {
     setLoading(true);
     setError('');
+    setCurrentMood(emotion);
     try {
-      const mood = await analyzeEmotion(text);
-      setCurrentMood(mood);
-      await fetchQuoteForMood(mood);
-    } catch (err) {
-      setError('Failed to analyze mood. Please try again.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchQuoteForMood = async (mood: string): Promise<void> => {
-    try {
-      const fetchedQuote = await fetchQuote(mood);
+      const fetchedQuote = await fetchMotivationalQuote(emotion);
       setQuote(fetchedQuote);
     } catch (err) {
       setError('Failed to fetch quote. Please try again.');
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -88,8 +78,7 @@ export const MoodProvider: React.FC<MoodProviderProps> = ({ children }) => {
     error,
     quote,
     darkMode,
-    analyzeMood,
-    fetchQuoteForMood,
+    fetchQuoteForEmotion,
     addEntry,
     deleteEntry,
     loadEntriesFromStorage,

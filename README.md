@@ -12,12 +12,12 @@
 - **Persistence**: browser `localStorage` for saving journal entries.
 
 **Key Features and Challenges**
-- **Feature — Mood analysis**: Users submit a short journal entry; the app sends the text to an emotion-analysis API to detect the prevailing mood.
+- **Feature — Mood analysis**: Users submit a short journal entry; the app sends the text to the Hugging Face Emotion Analysis model to detect the prevailing mood.
 - **Feature — Contextual quotes**: After mood detection the app fetches a motivational quote related to that mood.
 - **Feature — Persistent journal**: Entries are stored locally and shown in a scrollable list.
 - **Feature — Trends visualization**: Mood entries are mapped to a numeric scale and plotted using a line chart over the selected time range.
 - **Feature — Dark mode**: Toggleable dark mode persisted in `localStorage`.
-- **Challenge — Third-party APIs**: The app depends on two external APIs (emotion analysis and quotes). Handling API failures, missing results, and rate limits are primary concerns.
+- **Challenge — Third-party APIs**: The app depends on two external APIs (Hugging Face Emotion Analysis and API Ninjas for quotes). Handling API failures, missing results, and rate limits are primary concerns.
 
 **Architecture Decisions**
 - **Context API for global state**: `MoodProvider` (in `src/context/MoodContext.tsx`) centralizes state (entries, current mood, quotes, loading/error, dark mode) so components can remain small and focused.
@@ -35,10 +35,17 @@
 		npm install
 		```
 
-- **API keys**: The app expects two external keys (ParallelDots for emotion analysis and API Ninjas for quotes). By default the placeholders are in `src/utils/api.ts`:
+- **API keys**: The app expects two external keys (Hugging Face for emotion analysis and API Ninjas for quotes). Keys should be set as environment variables:
 
-	- `PARALLEL_DOTS_API_KEY` — for emotion analysis.
-	- `API_NINJAS_KEY` — for quote lookup.
+	- `VITE_HUGGING_FACE_KEY` — for emotion analysis.
+	- `VITE_API_NINJAS_KEY` — for quote lookup.
+
+	Create a `.env` file in the project root with these values. Example:
+
+	```
+	VITE_HUGGING_FACE_KEY=your-hugging-face-key-here
+	VITE_API_NINJAS_KEY=your-api-ninjas-key-here
+	```
 
 - **Run**:
 
@@ -76,13 +83,13 @@
 
 **Files of interest**
 - **`src/context/MoodContext.tsx`**: central provider that performs API calls, manages entries and theme, and persists data.
-- **`src/utils/api.ts`**: wrapper for the emotion and quote APIs (replace keys here or request an env-vars patch).
+- **`src/utils/api.ts`**: wrapper for the Hugging Face emotion analysis and API Ninjas quote APIs.
 - **`src/utils/localStorage.ts`**: `loadEntries` and `saveEntries` helpers.
 - **`src/components/MoodInput.tsx`**: handles user text input and submission flow.
 - **`src/components/MoodGraph.tsx`**: converts entries into chart data and renders `Recharts` line chart.
 
 **Notes / Next steps (recommended)**
-- Move API keys into environment variables and update `src/utils/api.ts` to use Vite env variables and add `.env.example` with expected keys.
+- API keys are now configured via environment variables in `.env` file.
 - Add a small export/import JSON feature so users can backup/restore entries across devices.
 - Add unit tests around `localStorage` helpers and `moodColors` mapping.
 - Add a CI step to run `npm run lint` and type checks on PRs.

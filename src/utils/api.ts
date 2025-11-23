@@ -1,64 +1,42 @@
-import type { EmotionResponse, QuoteResponse } from '../types';
-
-// API Keys - In production, these should be environment variables
-const PARALLEL_DOTS_API_KEY = 'your-parallel-dots-api-key'; // Replace with actual key
-const API_NINJAS_KEY = 'your-api-ninjas-key'; // Replace with actual key
-
-// Analyze emotion from text using ParallelDots API
-export const analyzeEmotion = async (text: string): Promise<string> => {
-  try {
-    const response = await fetch('https://apis.paralleldots.com/v4/emotion', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        api_key: PARALLEL_DOTS_API_KEY,
-        text: text,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Emotion API error: ${response.status}`);
-    }
-
-    const data: EmotionResponse = await response.json();
-    const emotions = data.emotion;
-
-    // Find the emotion with the highest score
-    const highestEmotion = Object.keys(emotions).reduce((a, b) =>
-      emotions[a] > emotions[b] ? a : b
-    );
-
-    return highestEmotion;
-  } catch (error) {
-    console.error('Error analyzing emotion:', error);
-    throw error;
-  }
+// Hardcoded inspirational quotes mapped by emotion (no API calls needed)
+const quotesByEmotion: Record<string, Array<{ text: string; author: string }>> = {
+  joy: [
+    { text: 'The best time to plant a tree was 20 years ago. The second best time is now.', author: 'Chinese Proverb' },
+    { text: 'Happiness is not something ready made. It comes from your own actions.', author: 'Dalai Lama' },
+    { text: 'The only way to do great work is to love what you do.', author: 'Steve Jobs' },
+  ],
+  sadness: [
+    { text: 'The wound is the place where the Light enters you.', author: 'Rumi' },
+    { text: 'Tears are words the heart cannot speak.', author: 'Stephen Covey' },
+    { text: 'You are braver than you believe, stronger than you seem, and smarter than you think.', author: 'A.A. Milne' },
+  ],
+  angry: [
+    { text: 'Anger is just sad\'s bodyguard.', author: 'Sabaa Tahir' },
+    { text: 'For every minute you are angry you lose sixty seconds of happiness.', author: 'Ralph Waldo Emerson' },
+    { text: 'An angry man is always full of poison.', author: 'Confucius' },
+  ],
+  fear: [
+    { text: 'Courage is not the absence of fear, but triumph over it.', author: 'Nelson Mandela' },
+    { text: 'Do the thing and you shall have the power.', author: 'Ralph Waldo Emerson' },
+    { text: 'Fear is the mind-killer. Fear is the little-death that brings total obliteration.', author: 'Frank Herbert' },
+  ],
+  calm: [
+    { text: 'Peace comes from within. Do not seek it without.', author: 'Buddha' },
+    { text: 'In the midst of winter, I found there was, within me, an invincible summer.', author: 'Albert Camus' },
+    { text: 'Let peace settle deep in your soul.', author: 'Unknown' },
+  ],
 };
 
-// Fetch motivational quote based on mood using API Ninjas
-export const fetchQuote = async (mood: string): Promise<{ text: string; author: string }> => {
+// Fetch a random motivational quote based on emotion (uses local quotes, no API)
+export const fetchMotivationalQuote = async (emotion: string): Promise<{ text: string; author: string }> => {
   try {
-    const response = await fetch(`https://api.api-ninjas.com/v1/quotes?category=${mood}`, {
-      headers: {
-        'X-Api-Key': API_NINJAS_KEY,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Quote API error: ${response.status}`);
-    }
-
-    const quotes: QuoteResponse[] = await response.json();
-    if (quotes.length === 0) {
-      throw new Error('No quotes found for this mood');
-    }
-
-    const quote = quotes[0];
-    return { text: quote.quote, author: quote.author };
+    const quotes = quotesByEmotion[emotion.toLowerCase()] || quotesByEmotion['calm'];
+    const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+    console.log('Fetched quote for emotion:', emotion, randomQuote);
+    return randomQuote;
   } catch (error) {
     console.error('Error fetching quote:', error);
-    throw error;
+    // Fallback to a default quote
+    return { text: 'This too shall pass.', author: 'Persian Proverb' };
   }
 };

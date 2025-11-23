@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useMood } from '../context/useMood';
 import { getMoodColor } from '../utils/moodColors';
 import Loader from './Loader';
@@ -6,30 +6,59 @@ import ErrorMessage from './ErrorMessage';
 
 const MoodInput: React.FC = () => {
   const [text, setText] = useState('');
-  const { analyzeMood, currentMood, loading, error, quote, addEntry } = useMood();
+  const { fetchQuoteForEmotion, currentMood, loading, error, quote, addEntry } = useMood();
+  const workerRef = useRef<Worker | null>(null);
+  const currentTextRef = useRef<string>('');
+
+  useEffect(() => {
+    // Create Web Worker
+    workerRef.current = new Worker(new URL('../utils/EmotionWorker.ts', import.meta.url), { type: 'module' });
+
+    // Handle messages from worker
+    workerRef.current.onmessage = async (event) => {
+      const { emotion, error: workerError } = event.data;
+      if (workerError) {
+        // Handle worker error, perhaps set error in context or local
+        console.error('Worker error:', workerError);
+        return;
+      }
+      if (emotion) {
+        try {
+          await fetchQuoteForEmotion(emotion);
+          // After fetching quote, create entry if mood and quote are available
+          if (currentMood && quote) {
+            const entry = {
+              id: Date.now().toString(),
+              date: new Date().toISOString(),
+              text: currentTextRef.current,
+              mood: currentMood,
+              quote,
+              color: getMoodColor(currentMood),
+            };
+            addEntry(entry);
+            setText(''); // Clear input after successful submission
+          }
+        } catch {
+          // Error handled in context
+        }
+      }
+    };
+
+    // Cleanup worker on unmount
+    return () => {
+      if (workerRef.current) {
+        workerRef.current.terminate();
+      }
+    };
+  }, [fetchQuoteForEmotion, currentMood, quote, addEntry]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim()) return;
+    if (!text.trim() || !workerRef.current) return;
 
-    try {
-      await analyzeMood(text);
-      // After analysis, create entry if mood and quote are available
-      if (currentMood && quote) {
-        const entry = {
-          id: Date.now().toString(),
-          date: new Date().toISOString(),
-          text: text.trim(),
-          mood: currentMood,
-          quote,
-          color: getMoodColor(currentMood),
-        };
-        addEntry(entry);
-        setText(''); // Clear input after successful submission
-      }
-    } catch {
-      // Error is handled in context
-    }
+    currentTextRef.current = text.trim();
+    // Send text to worker for emotion analysis
+    workerRef.current.postMessage({ text: currentTextRef.current });
   };
 
   const isDisabled = loading || !text.trim();
@@ -57,7 +86,7 @@ const MoodInput: React.FC = () => {
           </p>
         </div>
 
-        {error && <ErrorMessage message={error} onRetry={() => analyzeMood(text)} />}
+        {error && <ErrorMessage message={error} onRetry={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)} />}
 
         <button
           type="submit"
@@ -69,7 +98,7 @@ const MoodInput: React.FC = () => {
           }`}
           aria-describedby={loading ? 'loading-status' : undefined}
         >
-          {loading ? <Loader message="Analyzing your mood..." /> : 'Analyze My Mood'}
+          {loading ? <Loader message="Analyzing your mood..." /> : 'Analyze & Get Quote'}
         </button>
       </form>
 

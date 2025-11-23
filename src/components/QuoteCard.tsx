@@ -5,14 +5,14 @@ import Loader from './Loader';
 import ErrorMessage from './ErrorMessage';
 
 const QuoteCard: React.FC = () => {
-  const { currentMood, quote, fetchQuoteForMood, loading, error } = useMood();
+  const { currentMood, quote, fetchQuoteForEmotion, loading, error } = useMood();
   const [refreshLoading, setRefreshLoading] = useState(false);
 
   const handleRefresh = async () => {
     if (!currentMood) return;
     setRefreshLoading(true);
     try {
-      await fetchQuoteForMood(currentMood);
+      await fetchQuoteForEmotion(currentMood);
     } catch {
       // Error handled in context
     } finally {
